@@ -2,7 +2,7 @@ package config
 
 import (
 	"github.com/mitchellh/mapstructure"
-	"github.com/open-socket/pkg/tool/errs"
+	"github.com/openimsdk/tools/errs"
 	"github.com/spf13/viper"
 	"strings"
 )

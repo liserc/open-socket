@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/open-socket/pkg/config"
-	"github.com/open-socket/pkg/tool/errs"
-	"github.com/open-socket/pkg/tool/log"
-	"github.com/open-socket/pkg/version"
+	"github.com/liserc/open-socket/pkg/config"
+	"github.com/liserc/open-socket/pkg/version"
+	"github.com/openimsdk/tools/errs"
+	"github.com/openimsdk/tools/log"
 	"github.com/spf13/cobra"
 	"path/filepath"
 )
@@ -37,17 +37,12 @@ type CmdOpts struct {
 	configMap        map[string]any
 }
 
-func WithCronTaskLogName() func(*CmdOpts) {
-	return func(opts *CmdOpts) {
-		opts.loggerPrefixName = "openim-crontask"
-	}
-}
-
 func WithLogName(logName string) func(*CmdOpts) {
 	return func(opts *CmdOpts) {
 		opts.loggerPrefixName = logName
 	}
 }
+
 func WithConfigMap(configMap map[string]any) func(*CmdOpts) {
 	return func(opts *CmdOpts) {
 		opts.configMap = configMap
@@ -57,7 +52,7 @@ func WithConfigMap(configMap map[string]any) func(*CmdOpts) {
 func NewRootCmd(processName string, opts ...func(*CmdOpts)) *RootCmd {
 	rootCmd := &RootCmd{processName: processName}
 	cmd := cobra.Command{
-		Use:  "Start openIM application",
+		Use:  "Start OpenSocket application",
 		Long: fmt.Sprintf(`Start %s `, processName),
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			return rootCmd.persistentPreRun(cmd, opts...)

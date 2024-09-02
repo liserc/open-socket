@@ -1,8 +1,8 @@
 package config
 
 import (
-	"github.com/open-socket/pkg/tool/errs"
-	"github.com/open-socket/pkg/tool/field"
+	"github.com/openimsdk/tools/errs"
+	"github.com/openimsdk/tools/field"
 	"os"
 	"path/filepath"
 

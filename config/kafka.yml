@@ -1,0 +1,36 @@
+# Username for authentication
+username:
+# Password for authentication
+password:
+# Producer acknowledgment settings
+producerAck:
+# Compression type to use (e.g., none, gzip, snappy)
+compressType: none
+# List of Kafka broker addresses
+address: [ kafka.openim:9094 ]
+# Kafka topic for Redis integration
+toRedisTopic: openim_to_redis
+# Kafka topic for MongoDB integration
+toMongoTopic: openim_to_mongo
+# Kafka topic for push notifications
+toPushTopic: openim_to_push
+# Consumer group ID for Redis topic
+toRedisGroupID: redis
+# Consumer group ID for MongoDB topic
+toMongoGroupID: mongo
+# Consumer group ID for push notifications topic
+toPushGroupID: push
+# TLS (Transport Layer Security) configuration
+tls:
+  # Enable or disable TLS
+  enableTLS: false
+  # CA certificate file path
+  caCrt: ""
+  # Client certificate file path
+  clientCrt: ""
+  # Client key file path
+  clientKey: ""
+  # Client key password
+  clientKeyPwd: ""
+  # Whether to skip TLS verification (not recommended for production)
+  insecureSkipVerify: false

@@ -1,0 +1,37 @@
+syntax = "proto3";
+package model;
+option go_package = "github.com/liserc/open-socket/protocol/model";
+
+message MsgData {
+  string sendID = 1;
+  string recvID = 2;
+  string groupID = 3;
+  string clientMsgID = 4;
+  string serverMsgID = 5;
+  int32 senderPlatformID = 6;
+  string senderNickname = 7;
+  string senderFaceURL = 8;
+  int32 sessionType = 9;
+  int32 msgFrom = 10;
+  int32 contentType = 11;
+  bytes content = 12;
+  int64 seq = 14;
+  int64 sendTime = 15;
+  int64 createTime = 16;
+  int32 status = 17;
+  bool isRead = 18;
+  map<string, bool> options = 19;
+  OfflinePushInfo offlinePushInfo = 20;
+  repeated string atUserIDList = 21;
+  string attachedInfo = 22;
+  string ex = 23;
+}
+
+message OfflinePushInfo {
+  string title = 1;
+  string desc = 2;
+  string ex = 3;
+  string iOSPushSound = 4;
+  bool iOSBadgeCount = 5;
+  string signalInfo = 6;
+}
