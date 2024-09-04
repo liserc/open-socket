@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"github.com/liserc/open-socket/pkg/config"
 	"github.com/liserc/open-socket/pkg/version"
+	"path/filepath"
+	"strings"
+
 	"github.com/openimsdk/tools/errs"
 	"github.com/openimsdk/tools/log"
 	"github.com/spf13/cobra"
-	"path/filepath"
 )
 
 type RootCmd struct {
@@ -37,12 +39,17 @@ type CmdOpts struct {
 	configMap        map[string]any
 }
 
+func WithCronTaskLogName() func(*CmdOpts) {
+	return func(opts *CmdOpts) {
+		opts.loggerPrefixName = "openim-crontask"
+	}
+}
+
 func WithLogName(logName string) func(*CmdOpts) {
 	return func(opts *CmdOpts) {
 		opts.loggerPrefixName = logName
 	}
 }
-
 func WithConfigMap(configMap map[string]any) func(*CmdOpts) {
 	return func(opts *CmdOpts) {
 		opts.configMap = configMap
@@ -52,7 +59,7 @@ func WithConfigMap(configMap map[string]any) func(*CmdOpts) {
 func NewRootCmd(processName string, opts ...func(*CmdOpts)) *RootCmd {
 	rootCmd := &RootCmd{processName: processName}
 	cmd := cobra.Command{
-		Use:  "Start OpenSocket application",
+		Use:  "Start openIM application",
 		Long: fmt.Sprintf(`Start %s `, processName),
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			return rootCmd.persistentPreRun(cmd, opts...)
@@ -88,15 +95,15 @@ func (r *RootCmd) initializeConfiguration(cmd *cobra.Command, opts *CmdOpts) err
 	// Load common configuration file
 	//opts.configMap[ShareFileName] = StructEnvPrefix{EnvPrefix: shareEnvPrefix, ConfigStruct: &r.share}
 	for configFileName, configStruct := range opts.configMap {
-		err := config.LoadConfig(filepath.Join(configDirectory, configFileName),
+		err = config.LoadConfig(filepath.Join(configDirectory, configFileName),
 			ConfigEnvPrefixMap[configFileName], configStruct)
 		if err != nil {
 			return err
 		}
 	}
 	// Load common log configuration file
-	return config.LoadConfig(filepath.Join(configDirectory, LogConfigFileName),
-		ConfigEnvPrefixMap[LogConfigFileName], &r.log)
+	return config.LoadConfig(filepath.Join(configDirectory, LogCfgFileName),
+		ConfigEnvPrefixMap[LogCfgFileName], &r.log)
 }
 
 func (r *RootCmd) applyOptions(opts ...func(*CmdOpts)) *CmdOpts {
@@ -109,8 +116,9 @@ func (r *RootCmd) applyOptions(opts ...func(*CmdOpts)) *CmdOpts {
 }
 
 func (r *RootCmd) initializeLogger(cmdOpts *CmdOpts) error {
-	err := log.InitFromConfig(
+	ver := strings.Replace(version.Version, "\r\n", "", -1)
 
+	err := log.InitFromConfig(
 		cmdOpts.loggerPrefixName,
 		r.processName,
 		r.log.RemainLogLevel,
@@ -119,19 +127,18 @@ func (r *RootCmd) initializeLogger(cmdOpts *CmdOpts) error {
 		r.log.StorageLocation,
 		r.log.RemainRotationCount,
 		r.log.RotationTime,
-		version.Version,
+		ver,
 		r.log.IsSimplify,
 	)
 	if err != nil {
 		return errs.Wrap(err)
 	}
-	return errs.Wrap(log.InitConsoleLogger(r.processName, r.log.RemainLogLevel, r.log.IsJson, version.Version))
-
+	return errs.Wrap(log.InitConsoleLogger(r.processName, r.log.RemainLogLevel, r.log.IsJson, ver))
 }
 
 func defaultCmdOpts() *CmdOpts {
 	return &CmdOpts{
-		loggerPrefixName: "open-socket-log",
+		loggerPrefixName: "openim-service-log",
 	}
 }
 

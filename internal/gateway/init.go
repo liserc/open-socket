@@ -8,14 +8,13 @@ import (
 )
 
 type Config struct {
-	Gateway   config.Gateway
+	Share     config.Share
 	Discovery config.Discovery
+	Gateway   config.Gateway
 }
 
-// Start run ws server.
 func Start(ctx context.Context, index int, conf *Config) error {
-	log.CInfo(ctx, "gateway initializing", "rpcPorts", conf.Gateway.RPC.Ports, "prometheusPorts",
-		conf.Gateway.Prometheus.Ports, "wsPort", conf.Gateway.WS.Ports)
+	log.ZInfo(ctx, "gateway initializing", "rpcPorts", conf.Gateway.RPC.Ports, "prometheusPorts", conf.Gateway.Prometheus.Ports, "wsPort", conf.Gateway.WS.Ports)
 	wsPort, err := datautil.GetElemByIndex(conf.Gateway.WS.Ports, index)
 	if err != nil {
 		return err
@@ -24,6 +23,17 @@ func Start(ctx context.Context, index int, conf *Config) error {
 	if err != nil {
 		return err
 	}
-	log.CInfo(ctx, "", wsPort, rpcPort)
-	return nil
+	socketServer := NewSocketServer(
+		conf,
+		WithPort(wsPort),
+		WithMaxConnNum(int64(conf.Gateway.WS.WebsocketMaxConnNum)),
+		WithMessageMaxMsgLength(conf.Gateway.WS.WebsocketMaxMsgLen),
+	)
+	rpcServer := NewRpcServer(rpcPort, socketServer)
+	done := make(chan error)
+	go func() {
+		err = rpcServer.Start(ctx, index, conf)
+		done <- err
+	}()
+	return socketServer.Run(done)
 }
