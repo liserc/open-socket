@@ -16,22 +16,21 @@ const (
 )
 
 const (
+	// Websocket Event.
 	SocketRequestEvent  = "request"
 	SocketResponseEvent = "response"
 )
 
 const (
 	// Websocket Protocol.
-	WSGetNewestSeq        = 1001
-	WSPullMsgBySeqList    = 1002
-	WSSendMsg             = 1003
-	WSSendSignalMsg       = 1004
-	WSPushMsg             = 2001
-	WSKickOnlineMsg       = 2002
-	WsLogoutMsg           = 2003
-	WsSetBackgroundStatus = 2004
-	WsSubUserOnlineStatus = 2005
-	WSDataError           = 3001
+	WSGetNewestSeq     = 1001
+	WSPullMsgBySeqList = 1002
+	WSSendMsg          = 1003
+	WSSendSignalMsg    = 1004
+	WSPushMsg          = 2001
+	WSKickOnlineMsg    = 2002
+	WsLogoutMsg        = 2003
+	WSDataError        = 3001
 )
 
 const (

@@ -35,6 +35,7 @@ type SocketServer struct {
 	registerChan      chan *Client
 	unregisterChan    chan *Client
 	clients           UserMap
+	clientPool        sync.Pool
 	socket            *socketio.Server
 	registry          discovery.SvcDiscoveryRegistry
 }
@@ -49,6 +50,11 @@ func NewSocketServer(config *Config, opts ...Option) *SocketServer {
 		port:       opt.port,
 		maxConnNum: opt.maxConnNum,
 		clients:    newUserMap(),
+		clientPool: sync.Pool{
+			New: func() any {
+				return new(Client)
+			},
+		},
 	}
 }
 
@@ -61,10 +67,10 @@ func (ws *SocketServer) Run(done chan error) error {
 	socket := socketio.NewServer(&engineio.Options{
 		Transports: []transport.Transport{
 			&websocket.Transport{
-				CheckOrigin: allowOrigin,
+				CheckOrigin: handleAllowOrigin,
 			},
 			&polling.Transport{
-				CheckOrigin: allowOrigin,
+				CheckOrigin: handleAllowOrigin,
 			},
 		},
 	})
@@ -79,6 +85,12 @@ func (ws *SocketServer) Run(done chan error) error {
 			return err
 		}
 		conn.SetContext(ctx)
+
+		// Retrieve a client object from the client pool, reset its state, and associate it with the current WebSocket long connection
+		client := ws.clientPool.Get().(*Client)
+		client.ResetClient(ctx, conn)
+		ws.registerClient(client)
+
 		return nil
 	})
 	socket.OnDisconnect("/", func(conn socketio.Conn, reason string) {
@@ -87,11 +99,24 @@ func (ws *SocketServer) Run(done chan error) error {
 		if ctx.ConnErr != nil {
 			log.ZError(ctx, "connect error close", ctx.ConnErr)
 			_ = conn.Close()
+			return
+		}
+
+		clients, _, ok := ws.GetUserPlatformCons(ctx.GetUserID(), stringutil.StringToInt(ctx.GetPlatformID()))
+		if !ok {
+			log.ZDebug(ctx, "conn not exist", "userID", ctx.GetUserID(), "platformID", ctx.GetPlatformID())
+			return
+		}
+		for _, client := range clients {
+			if client.conn.ID() != conn.ID() {
+				continue
+			}
+			ws.unregisterClient(client)
 		}
 	})
 	socket.OnError("/", func(conn socketio.Conn, e error) {
 		ctx := conn.Context().(*ConnContext)
-		log.CInfo(ctx, "connect error", "ConnErr", ctx.ConnErr)
+		log.CInfo(ctx, "error", "ConnErr", ctx.ConnErr)
 	})
 	socket.OnEvent("/", SocketRequestEvent, func(conn socketio.Conn, message string) {
 		ctx := conn.Context().(*ConnContext)
@@ -161,11 +186,6 @@ func (ws *SocketServer) KickUserConn(client *Client) error {
 	return client.KickOnlineMessage()
 }
 
-func allowOrigin(r *http.Request) bool {
-	log.CInfo(context.Background(), "Origin Request", "RequestURI", r.RequestURI, "Header", r.Header)
-	return true
-}
-
 func (ws *SocketServer) registerClient(client *Client) {
 	var (
 		userOK     bool
@@ -180,7 +200,6 @@ func (ws *SocketServer) registerClient(client *Client) {
 		ws.onlineUserNum.Add(1)
 		ws.onlineUserConnNum.Add(1)
 	} else {
-		//ws.multiTerminalLoginChecker(clientOK, oldClients, client)
 		log.ZDebug(client.ctx, "user exist", "userID", client.UserID, "platformID", client.PlatformID)
 		if clientOK {
 			ws.clients.Set(client.UserID, client)
@@ -196,6 +215,24 @@ func (ws *SocketServer) registerClient(client *Client) {
 	wg := sync.WaitGroup{}
 	wg.Wait()
 	log.ZInfo(client.ctx, "user online", "online user nums", ws.onlineUserNum.Load(), "online user conn nums", ws.onlineUserConnNum.Load())
+}
+
+func (ws *SocketServer) unregisterClient(client *Client) {
+	defer ws.clientPool.Put(client)
+	isDeleteUser := ws.clients.DeleteClients(client.UserID, []*Client{client})
+	if isDeleteUser {
+		ws.onlineUserNum.Add(-1)
+		prommetrics.OnlineUserGauge.Dec()
+	}
+	ws.onlineUserConnNum.Add(-1)
+	log.ZInfo(client.ctx, "user offline", "close conn", client.conn.ID(),
+		"online user num", ws.onlineUserNum.Load(), "online user conn num", ws.onlineUserConnNum.Load(),
+	)
+}
+
+func handleAllowOrigin(r *http.Request) bool {
+	log.CInfo(context.Background(), "Origin Request", "RequestURI", r.RequestURI, "Header", r.Header)
+	return true
 }
 
 func getRemoteAdders(client []*Client) string {

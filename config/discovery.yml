@@ -1,12 +1,12 @@
 enable: etcd
 etcd:
-  rootDirectory: openim
-  address: [ localhost:12379 ]
+  rootDirectory: opensocket
+  address: [ 10.10.9.100:31398 ]
   username: ''
   password: ''
 
 zookeeper:
-  schema: openim
+  schema: opensocket
   address: [ localhost:12181 ]
   username: ''
   password: ''

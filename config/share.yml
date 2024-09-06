@@ -1,14 +1,7 @@
-secret: openIM123
+secret: hQSf25fZ
 rpcRegisterName:
-  user: user
-  friend: friend
-  msg: msg
   push: push
-  messageGateway: messageGateway
-  group: group
-  auth: auth
-  conversation: conversation
-  third: third
+  gateway: gateway
 
-imAdminUserID: [ imAdmin ]
+imAdminUserID: [ 20240906 ]
 
